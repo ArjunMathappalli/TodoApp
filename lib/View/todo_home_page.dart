@@ -32,6 +32,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _todoHiveServices.closeBox();
     super.dispose();
   }
 
@@ -96,7 +97,6 @@ class _TodoHomePageState extends State<TodoHomePage> {
                         itemCount: _todoLists.length,
                         itemBuilder: (context, index) {
                           final todos = _todoLists[index];
-
                           return Card(
                             margin: const EdgeInsets.all(10),
                             elevation: 1,
@@ -113,11 +113,24 @@ class _TodoHomePageState extends State<TodoHomePage> {
                               title: Text(
                                 todos.title,
                                 style: TextStyle(
-                                    color: Colors.indigo[900],
-                                    fontWeight: FontWeight.bold),
+                                    color: todos.isCompelete
+                                        ? Colors.grey
+                                        : Colors.indigo[900],
+                                    fontWeight: FontWeight.bold,
+                                    decoration: todos.isCompelete
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none),
                               ),
-                              subtitle: Text(todos.description),
-                              trailing: Container(
+                              subtitle: Text(todos.description,
+                                  style: TextStyle(
+                                      color: todos.isCompelete
+                                          ? Colors.grey
+                                          : Colors.grey[800],
+                                      fontWeight: FontWeight.bold,
+                                      decoration: todos.isCompelete
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none)),
+                              trailing: SizedBox(
                                 width: 100,
                                 // color: Colors.red[50],
                                 child: Row(
@@ -135,7 +148,6 @@ class _TodoHomePageState extends State<TodoHomePage> {
                                       onPressed: () async {
                                         print("deleted");
                                         showDeleteDialog(index);
-
                                         loadAllTodoLists();
                                       },
                                     ),
@@ -154,55 +166,68 @@ class _TodoHomePageState extends State<TodoHomePage> {
 
   Future<void> showDeleteDialog(int index) async {
     return await showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: Colors.indigo[50],
-            title: Center(
-              child: Text(
-                "Delete",
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo[900]),
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.indigo[50],
+          title: Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: Text(
+              "Delete",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo[900],
               ),
             ),
-            content: Text("Do you really want to delete?"),
-            actions: [
-              ElevatedButton(
-                style: ButtonStyle(
-                  backgroundColor:
-                      MaterialStateProperty.all(Colors.indigo[900]),
-                ),
-                child:
-                    const Text("Cancel", style: TextStyle(color: Colors.white)),
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                },
+          ),
+          content: Text(
+            "Do you really want to delete?",
+            style: TextStyle(color: Colors.indigo[900]),
+          ),
+          actions: [
+            // Cancel Button
+            ElevatedButton(
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),
               ),
-              ElevatedButton(
-                style: ButtonStyle(
-                  backgroundColor:
-                      MaterialStateProperty.all(Colors.indigo[900]),
-                ),
-                child:
-                    const Text("Delete", style: TextStyle(color: Colors.white)),
-                onPressed: () async {
-                  await _todoHiveServices.deleteTodo(index);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Deleted'),
-                      backgroundColor: Colors.red[900],
-                      elevation: 10,
-                    ),
-                  );
-                  Navigator.of(context).pop(true);
-                  loadAllTodoLists();
-                },
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white),
               ),
-            ],
-          );
-        });
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+
+            // Delete Button
+            ElevatedButton(
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(Colors.red[900]),
+              ),
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () async {
+                await _todoHiveServices.deleteTodo(index);
+                setState(() {
+                  _todoLists.removeAt(index);
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Deleted'),
+                    backgroundColor: Colors.red[900],
+                    elevation: 10,
+                  ),
+                );
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<bool> _showExitConfirmation(BuildContext context) async {
@@ -285,7 +310,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
           actions: [
             ElevatedButton(
               style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),
+                backgroundColor: WidgetStateProperty.all(Colors.indigo[900]),
               ),
               child:
                   const Text("Cancel", style: TextStyle(color: Colors.white)),
@@ -295,7 +320,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
             ),
             ElevatedButton(
               style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),
+                backgroundColor: WidgetStateProperty.all(Colors.indigo[900]),
               ),
               child: const Text("Add", style: TextStyle(color: Colors.white)),
               onPressed: () {
@@ -317,6 +342,9 @@ class _TodoHomePageState extends State<TodoHomePage> {
                   createdAt: DateTime.now(),
                 );
                 _todoHiveServices.addTodo(newTodo);
+                setState(() {
+                  _todoLists.insert(0, newTodo);
+                });
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -328,7 +356,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                 _titleController.clear();
                 _descriptionController.clear();
                 Navigator.pop(context);
-                loadAllTodoLists();
+                // loadAllTodoLists();
               },
             ),
           ],
@@ -354,7 +382,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo[900]),
           )),
-          content: Container(
+          content: SizedBox(
             height: 200,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -397,7 +425,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
           actions: [
             ElevatedButton(
               style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),
+                backgroundColor: WidgetStateProperty.all(Colors.indigo[900]),
               ),
               child:
                   const Text("Cancel", style: TextStyle(color: Colors.white)),
@@ -407,7 +435,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
             ),
             ElevatedButton(
               style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),
+                backgroundColor: WidgetStateProperty.all(Colors.indigo[900]),
               ),
               child:
                   const Text("Update", style: TextStyle(color: Colors.white)),
@@ -431,6 +459,9 @@ class _TodoHomePageState extends State<TodoHomePage> {
                 }
 
                 await _todoHiveServices.updateTodo(index, todoappmodel);
+                setState(() {
+                  _todoLists[index] = todoappmodel;
+                });
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -442,7 +473,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                 _titleController.clear();
                 _descriptionController.clear();
                 Navigator.pop(context);
-                loadAllTodoLists();
+                // loadAllTodoLists();
               },
             ),
           ],
