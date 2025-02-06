@@ -16,8 +16,13 @@ class TodoHiveServices {
     if (_todoBox == null) {
       await openBox();
     }
-    await _todoBox?.add(todoAppModel);
+    List<TodoAppModel> todos = _todoBox!.values.toList();
+    todos.insert(0, todoAppModel);
+    await _todoBox?.clear();
+    await _todoBox?.addAll(todos);
+    // await _todoBox?.add(todoAppModel);
   }
+
 
   Future<List<TodoAppModel>> getAllTodo() async {
     if (_todoBox == null) {
@@ -30,7 +35,11 @@ class TodoHiveServices {
     if (_todoBox == null) {
       await openBox();
     }
-    await _todoBox?.deleteAt(index);
+    if (index >= 0 && index < _todoBox!.length) {
+      await _todoBox?.deleteAt(index);
+    } else {
+      throw Exception('Index out of range');
+    }
   }
 
   Future<void> updateTodo(int index, TodoAppModel todoAppModel) async {

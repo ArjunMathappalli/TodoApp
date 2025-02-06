@@ -146,9 +146,13 @@ class _TodoHomePageState extends State<TodoHomePage> {
                                       icon: Icon(Icons.delete,
                                           color: Colors.red[900]),
                                       onPressed: () async {
-                                        print("deleted");
-                                        showDeleteDialog(index);
-                                        loadAllTodoLists();
+                                        print("Delete button clicked");
+                                        bool isDeleted =
+                                            await showDeleteDialog(index);
+                                        if (isDeleted) {
+                                          loadAllTodoLists();
+                                          setState(() {});
+                                        }
                                       },
                                     ),
                                   ],
@@ -164,89 +168,50 @@ class _TodoHomePageState extends State<TodoHomePage> {
     );
   }
 
-  Future<void> showDeleteDialog(int index) async {
-    return await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.indigo[50],
-          title: Padding(
-            padding: const EdgeInsets.only(top: 20.0),
-            child: Text(
-              "Delete",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo[900],
-              ),
-            ),
-          ),
-          content: Text(
-            "Do you really want to delete?",
-            style: TextStyle(color: Colors.indigo[900]),
-          ),
-          actions: [
-            // Cancel Button
-            ElevatedButton(
-              style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),
-              ),
-              child: const Text(
-                "Cancel",
-                style: TextStyle(color: Colors.white),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-            ),
-
-            // Delete Button
-            ElevatedButton(
-              style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.red[900]),
-              ),
-              child: const Text(
-                "Delete",
-                style: TextStyle(color: Colors.white),
-              ),
-              onPressed: () async {
-                await _todoHiveServices.deleteTodo(index);
-                setState(() {
-                  _todoLists.removeAt(index);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Deleted'),
-                    backgroundColor: Colors.red[900],
-                    elevation: 10,
-                  ),
-                );
-                Navigator.of(context).pop(true);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<bool> _showExitConfirmation(BuildContext context) async {
-    return await showDialog(
+  Future<bool> showDeleteDialog(int index) async {
+    return await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text("Confirm Exit"),
-            content: Text("Do you really want to exit?"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false), // Stay
-                child: Text("No"),
+          builder: (context) {
+            return AlertDialog(
+              backgroundColor: Colors.indigo[50],
+              title: Center(
+                child: Text(
+                  "Delete",
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo[900]),
+                ),
               ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true), // Exit
-                child: Text("Yes"),
-              ),
-            ],
-          ),
+              content: Text("Do you really want to delete?"),
+              actions: [
+                ElevatedButton(
+                  style: ButtonStyle(
+                    backgroundColor:
+                        MaterialStateProperty.all(Colors.indigo[900]),
+                  ),
+                  child: const Text("Cancel",
+                      style: TextStyle(color: Colors.white)),
+                  onPressed: () {
+                    Navigator.of(context).pop(false); // Return false on cancel
+                  },
+                ),
+                ElevatedButton(
+                  style: ButtonStyle(
+                    backgroundColor:
+                        MaterialStateProperty.all(Colors.indigo[900]),
+                  ),
+                  child: const Text("Delete",
+                      style: TextStyle(color: Colors.white)),
+                  onPressed: () async {
+                    await _todoHiveServices.deleteTodo(index);
+
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+              ],
+            );
+          },
         ) ??
         false;
   }
@@ -480,5 +445,26 @@ class _TodoHomePageState extends State<TodoHomePage> {
         );
       },
     );
+  }
+
+  Future<bool> _showExitConfirmation(BuildContext context) async {
+    return await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Confirm Exit"),
+            content: Text("Do you really want to exit?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text("No"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text("Yes"),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 }
